@@ -42,13 +42,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ── Routes ───────────────────────────────────────────
-app.use("/api/auth",     require("./routes/authRoutes"));
-app.use("/api/users",    require("./routes/userRoutes"));
-app.use("/api/chats",    require("./routes/chatRoutes"));
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/users", require("./routes/userRoutes"));
+app.use("/api/chats", require("./routes/chatRoutes"));
 app.use("/api/messages", require("./routes/messageRoutes"));
-app.use("/api/groups",   require("./routes/groupRoutes"));
-app.use("/api/calls",    require("./routes/callRoutes"));
-app.use("/api/media",    require("./routes/mediaRoutes"));
+app.use("/api/groups", require("./routes/groupRoutes"));
+app.use("/api/calls", require("./routes/callRoutes"));
+app.use("/api/media", require("./routes/mediaRoutes"));
 
 // ── Socket.io ────────────────────────────────────────
 socketHandler(io);

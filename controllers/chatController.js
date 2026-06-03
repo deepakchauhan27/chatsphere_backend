@@ -49,7 +49,16 @@ const getMyChats = async (req, res) => {
 // @desc Create group chat
 const createGroupChat = async (req, res) => {
   try {
-    const { name, participants } = req.body;
+    let { name, participants } = req.body;
+
+    // ── Parse participants if sent as JSON string ──────
+    if (typeof participants === "string") {
+      try {
+        participants = JSON.parse(participants);
+      } catch {
+        participants = [participants];
+      }
+    }
 
     if (!name || !participants || participants.length < 2) {
       return res.status(400).json({
@@ -57,14 +66,14 @@ const createGroupChat = async (req, res) => {
       });
     }
 
-    const allParticipants = [...participants, req.user._id];
+    const allParticipants = [...participants, req.user._id.toString()];
 
     const chat = await Chat.create({
-      isGroup:     true,
-      groupName:   name,
+      isGroup:      true,
+      groupName:    name,
       participants: allParticipants,
-      groupAdmin:  req.user._id,
-      groupAvatar: req.file ? req.file.path : "",
+      groupAdmin:   req.user._id,
+      groupAvatar:  req.file ? req.file.path : "",
     });
 
     const fullChat = await Chat.findById(chat._id).populate(
