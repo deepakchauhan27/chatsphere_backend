@@ -4,23 +4,23 @@ const EVENTS      = require("./events");
 const callSocketHandler = (io, socket) => {
 
   // ── Initiate Call ─────────────────────────────────
-  socket.on(EVENTS.CALL_INITIATE, ({ receiverId, callType, callerId, callerName, callerAvatar }) => {
+  socket.on(EVENTS.CALL_INITIATE, (data) => {
+    const { receiverId, callType, callerId, callerName, callerAvatar } = data;
     const receiverSocketId = roomManager.getSocketId(receiverId);
 
+    console.log(`Call from ${callerId} to ${receiverId}`);
+
     if (!receiverSocketId) {
-      // Receiver is offline
       socket.emit(EVENTS.CALL_ENDED, { reason: "User is offline" });
       return;
     }
 
-    // Check if receiver is already in a call
     if (roomManager.isInCall(receiverId)) {
       socket.emit(EVENTS.CALL_BUSY, { receiverId });
       return;
     }
 
-    // Register active call
-    const callId = `${callerId}_${receiverId}_${Date.now()}`;
+    const callId = `call_${callerId}_${receiverId}_${Date.now()}`;
     roomManager.addCall(callId, {
       caller:   callerId,
       receiver: receiverId,
@@ -28,7 +28,10 @@ const callSocketHandler = (io, socket) => {
       callId,
     });
 
-    // Notify receiver of incoming call
+    // Store callId on socket for cleanup
+    socket.currentCallId = callId;
+
+    // Notify receiver
     io.to(receiverSocketId).emit(EVENTS.CALL_INCOMING, {
       callId,
       callType,
@@ -39,57 +42,63 @@ const callSocketHandler = (io, socket) => {
 
     // Send callId back to caller
     socket.emit("call:callId", { callId });
+
+    console.log(`Call ${callId} initiated`);
   });
 
-  // ── Accept Call ───────────────────────────────────
+  // ── Accept Call ────────────────────────────────────
   socket.on(EVENTS.CALL_ACCEPTED, ({ callId, callerId }) => {
     const callerSocketId = roomManager.getSocketId(callerId);
+    console.log(`Call ${callId} accepted`);
     if (callerSocketId) {
       io.to(callerSocketId).emit(EVENTS.CALL_ACCEPTED, { callId });
     }
   });
 
-  // ── Reject Call ───────────────────────────────────
+  // ── Reject Call ────────────────────────────────────
   socket.on(EVENTS.CALL_REJECTED, ({ callId, callerId }) => {
     const callerSocketId = roomManager.getSocketId(callerId);
+    console.log(`Call ${callId} rejected`);
     if (callerSocketId) {
       io.to(callerSocketId).emit(EVENTS.CALL_REJECTED, { callId });
     }
     roomManager.removeCall(callId);
   });
 
-  // ── End Call ──────────────────────────────────────
+  // ── End Call ───────────────────────────────────────
   socket.on(EVENTS.CALL_ENDED, ({ callId, receiverId, callerId }) => {
-    const otherUserId    = receiverId || callerId;
-    const otherSocketId  = roomManager.getSocketId(otherUserId);
-
+    console.log(`Call ${callId} ended`);
+    const otherUserId   = receiverId || callerId;
+    const otherSocketId = roomManager.getSocketId(otherUserId);
     if (otherSocketId) {
       io.to(otherSocketId).emit(EVENTS.CALL_ENDED, { callId });
     }
     roomManager.removeCall(callId);
   });
 
-  // ── WebRTC: Offer ─────────────────────────────────
-  socket.on(EVENTS.WEBRTC_OFFER, ({ offer, receiverId }) => {
+  // ── WebRTC Offer ───────────────────────────────────
+  socket.on("webrtc:offer", ({ offer, receiverId }) => {
     const receiverSocketId = roomManager.getSocketId(receiverId);
+    console.log(`WebRTC offer to ${receiverId}`);
     if (receiverSocketId) {
-      io.to(receiverSocketId).emit(EVENTS.WEBRTC_OFFER, { offer });
+      io.to(receiverSocketId).emit("webrtc:offer", { offer });
     }
   });
 
-  // ── WebRTC: Answer ────────────────────────────────
-  socket.on(EVENTS.WEBRTC_ANSWER, ({ answer, callerId }) => {
+  // ── WebRTC Answer ──────────────────────────────────
+  socket.on("webrtc:answer", ({ answer, callerId }) => {
     const callerSocketId = roomManager.getSocketId(callerId);
+    console.log(`WebRTC answer to ${callerId}`);
     if (callerSocketId) {
-      io.to(callerSocketId).emit(EVENTS.WEBRTC_ANSWER, { answer });
+      io.to(callerSocketId).emit("webrtc:answer", { answer });
     }
   });
 
-  // ── WebRTC: ICE Candidate ─────────────────────────
-  socket.on(EVENTS.WEBRTC_ICE, ({ candidate, targetId }) => {
+  // ── ICE Candidate ──────────────────────────────────
+  socket.on("webrtc:ice", ({ candidate, targetId }) => {
     const targetSocketId = roomManager.getSocketId(targetId);
     if (targetSocketId) {
-      io.to(targetSocketId).emit(EVENTS.WEBRTC_ICE, { candidate });
+      io.to(targetSocketId).emit("webrtc:ice", { candidate });
     }
   });
 };
