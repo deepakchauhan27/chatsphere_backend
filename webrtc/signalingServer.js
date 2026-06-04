@@ -96,12 +96,17 @@ const signalingServer = (io, socket) => {
   });
 
   // ── WebRTC Answer ──────────────────────────────────
-  socket.on(EVENTS.ANSWER, ({ answer, callerId }) => {
-    const callerSocketId = roomManager.getSocketId(callerId);
-    if (callerSocketId) {
-      io.to(callerSocketId).emit(EVENTS.ANSWER, { answer });
-    }
-  });
+ socket.on(EVENTS.ANSWER, ({ answer, callerId }) => {
+  console.log("ANSWER RECEIVED FOR:", callerId);
+
+  const callerSocketId = roomManager.getSocketId(callerId);
+
+  console.log("CALLER SOCKET:", callerSocketId);
+
+  if (callerSocketId) {
+    io.to(callerSocketId).emit(EVENTS.ANSWER, { answer });
+  }
+});
 
   // ── ICE Candidate ──────────────────────────────────
   socket.on(EVENTS.ICE_CANDIDATE, ({ candidate, targetId }) => {
