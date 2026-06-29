@@ -6,10 +6,21 @@ const signalingServer = (io, socket) => {
 
   // ── Initiate Call ──────────────────────────────────
   socket.on(EVENTS.CALL_INITIATE, ({ receiverId, callType, callerId, callerName, callerAvatar }) => {
-    const receiverSocketId = roomManager.getSocketId(receiverId);
+    
+  console.log("===== CALL INITIATE =====");
+  console.log("Caller:", callerId);
+  console.log("Receiver:", receiverId);
+
+      const receiverSocketId = roomManager.getSocketId(receiverId);
+
+    console.log("Receiver Socket:", receiverSocketId);
+    console.log("Current Socket:", socket.id);
 
     if (!receiverSocketId) {
-      socket.emit(EVENTS.CALL_ENDED, { reason: "User is offline" });
+      console.log("Receiver offline");  
+      socket.emit(EVENTS.CALL_ENDED, {
+        reason: "User is offline",
+      });
       return;
     }
 

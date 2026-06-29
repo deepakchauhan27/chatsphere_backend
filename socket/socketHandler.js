@@ -24,7 +24,14 @@ const socketHandler = (io) => {
         onlineUsers: roomManager.getOnlineUsers(),
       });
 
-      console.log(`User online: ${userId}`);
+      console.log(
+  `User ${userId} connected with socket ${socket.id}`
+);
+
+console.log(
+  "Online users:",
+  roomManager.getOnlineUsers()
+);
     });
 
     // ── Join Chat Room ──────────────────────────────
@@ -95,6 +102,7 @@ const socketHandler = (io) => {
     // ── WebRTC Signaling + Call Events ──────────────
     // Handles: offer, answer, ICE, call initiate,
     //          accept, reject, end, mute, screen share
+    console.log("Loading signaling server for socket:", socket.id);
     signalingServer(io, socket);
 
     // ── Disconnect ──────────────────────────────────
@@ -102,6 +110,9 @@ const socketHandler = (io) => {
       const userId = socket.userId;
 
       if (userId) {
+        console.log(
+  `User ${userId} disconnected from socket ${socket.id}`
+);
         roomManager.removeUser(userId);
 
         // Update DB
