@@ -106,33 +106,41 @@ console.log(
     signalingServer(io, socket);
 
     // ── Disconnect ──────────────────────────────────
-    socket.on(EVENTS.DISCONNECT, async () => {
-      const userId = socket.userId;
+  socket.on(EVENTS.DISCONNECT, async () => {
+  const userId = socket.userId;
 
-      if (userId) {
-        console.log(
-  `User ${userId} disconnected from socket ${socket.id}`
-);
-        roomManager.removeUser(userId);
+  if (!userId) return;
 
-        // Update DB
-        await User.findByIdAndUpdate(userId, {
-          isOnline: false,
-          lastSeen: Date.now(),
-          socketId: "",
-        });
+  console.log(`Socket disconnected: ${socket.id}`);
 
-        // Broadcast offline status
-        io.emit(EVENTS.USER_OFFLINE, {
-          userId,
-          onlineUsers: roomManager.getOnlineUsers(),
-        });
+  // Wait 5 seconds before marking offline
+  setTimeout(async () => {
 
-        console.log(`User offline: ${userId}`);
-      }
+    // User already reconnected?
+    const currentSocket = roomManager.getSocketId(userId);
 
-      console.log(`Socket disconnected: ${socket.id}`);
+    if (currentSocket) {
+      console.log(`User ${userId} reconnected`);
+      return;
+    }
+
+    roomManager.removeUser(userId);
+
+    await User.findByIdAndUpdate(userId, {
+      isOnline: false,
+      lastSeen: Date.now(),
+      socketId: "",
     });
+
+    io.emit(EVENTS.USER_OFFLINE, {
+      userId,
+      onlineUsers: roomManager.getOnlineUsers(),
+    });
+
+    console.log(`User offline: ${userId}`);
+
+  }, 5000);
+});
   });
 };
 
